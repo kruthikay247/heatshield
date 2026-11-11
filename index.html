@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HeatShield</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700&family=Inter:wght@400;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a0f0b;--panel:#2a1c16;--ink:#fff2e3;--mute:#c9a894;--line:#4a362c;--ok:#7bc67e;--warn:#f5b73b;--stop:#ff8a3d;--stopbg:#3a1408;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fff2e3;--panel:#ffe6cc;--ink:#1a0f0b;--mute:#6b5043;--line:#e8c9ad;--ok:#2e7d32;--warn:#a86a00;--stop:#c2410c;--stopbg:#ffd9bf}}
+:root[data-theme="dark"]{--bg:#1a0f0b;--panel:#2a1c16;--ink:#fff2e3;--mute:#c9a894;--line:#4a362c}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px}
+h1{font-family:Fraunces,Georgia,serif;font-size:1.6rem;margin:0}
+.tag{font-family:Caveat,cursive;color:var(--stop);font-size:1.2rem;margin:0 0 14px}
+.signal{border-radius:28px;padding:22px;background:var(--panel);border:2px solid var(--line);transition:background .4s,border-color .4s}
+.signal[data-s=ok]{border-color:var(--ok)}
+.signal[data-s=slow]{border-color:var(--warn)}
+.signal[data-s=stop]{border-color:var(--stop);background:var(--stopbg)}
+.signal small{color:var(--mute)}
+#word{font-family:Fraunces,Georgia,serif;font-size:3rem;line-height:1.05;margin:4px 0 8px}
+[data-s=ok] #word{color:var(--ok)}[data-s=slow] #word{color:var(--warn)}[data-s=stop] #word{color:var(--stop)}
+.bar{height:10px;border-radius:5px;background:var(--line);margin:12px 0;overflow:hidden}
+#fill{height:100%;width:0;background:currentColor;transition:width .4s}
+#shade{font-family:Caveat,cursive;font-size:1.35rem;color:var(--stop)}
+section{margin-top:16px;background:var(--panel);border-radius:18px;padding:16px}
+h2{font-size:1rem;margin:0 0 10px}
+label{display:flex;justify-content:space-between;font-size:.9rem;margin-top:12px}
+label b{color:var(--stop)}
+input[type=range]{width:100%;accent-color:var(--stop)}
+button{font:inherit;font-weight:600;border:0;border-radius:14px;padding:13px 16px;cursor:pointer;background:var(--stop);color:#1a0f0b;min-height:48px}
+button.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.row{display:flex;gap:10px;margin-top:14px}.row button{flex:1}
+svg{width:100%;height:auto;display:block;border-radius:12px;background:var(--bg)}
+p.note{color:var(--mute);font-size:.8rem;margin:10px 0 0}
+#toast{min-height:1.2em;margin-top:8px;font-size:.9rem;color:var(--warn)}
+</style>
+</head>
+<body>
+<main>
+<h1>HeatShield</h1>
+<p class="tag">a heat warning that is about you, not your city</p>
+
+<div class="signal" id="sig" data-s="ok" role="status" aria-live="polite">
+  <small>Right now</small>
+  <div id="word">Fine</div>
+  <div id="msg">Heat strain is low. Keep your water close.</div>
+  <div class="bar" style="color:var(--ok)" id="barwrap"><div id="fill"></div></div>
+  <small>Heat strain score: <b id="score">0</b> / 100</small>
+  <div id="shade" hidden>Shade 200 m away →</div>
+</div>
+
+<div class="row">
+  <button id="sim">Run a shift demo</button>
+  <button id="sos" class="alt">SOS</button>
+</div>
+<div id="toast" aria-live="polite"></div>
+
+<section>
+  <h2>Your readings</h2>
+  <label>Air temperature <b><span id="vt"></span> °C</b></label>
+  <input type="range" id="t" min="20" max="50" value="34" aria-label="Air temperature">
+  <label>Humidity <b><span id="vh"></span> %</b></label>
+  <input type="range" id="h" min="10" max="100" value="55" aria-label="Humidity">
+  <label>Heart rate <b><span id="vr"></span> bpm</b></label>
+  <input type="range" id="r" min="60" max="190" value="95" aria-label="Heart rate">
+  <label>Hours in the sun <b><span id="vs"></span> h</b></label>
+  <input type="range" id="s" min="0" max="10" step="0.1" value="1" aria-label="Hours in the sun">
+  <label>Water drunk <b><span id="vw"></span> L</b></label>
+  <input type="range" id="w" min="0" max="4" step="0.1" value="0.5" aria-label="Water drunk">
+  <p class="note">The clip (ESP32 + BME280 + MAX30102) will feed these values over Bluetooth. In this demo you set them by hand.</p>
+</section>
+
+<section>
+  <h2>Heat hotspots, anonymous</h2>
+  <svg viewBox="0 0 300 150" id="map" role="img" aria-label="Map of heat strain reports"></svg>
+  <p class="note">Each stop-now alert adds one anonymous dot. No names, no exact location.</p>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const ids=['t','h','r','s','w'];
+const V={t:'vt',h:'vh',r:'vr',s:'vs',w:'vw'};
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+let last='ok',simTimer=null;
+
+function heatIndexC(tc,rh){
+  const t=tc*9/5+32;
+  if(t<80) return tc;
+  const hi=-42.379+2.04901523*t+10.14333127*rh-.22475541*t*rh-.00683783*t*t-.05481717*rh*rh+.00122874*t*t*rh+.00085282*t*rh*rh-.00000199*t*t*rh*rh;
+  return (hi-32)*5/9;
+}
+// Rule-based strain score (0-100). Placeholder for the TFLite model.
+function score(){
+  const g=k=>+$(k).value;
+  const hi=heatIndexC(g('t'),g('h'));
+  const env=clamp((hi-27)/19)*45;
+  const work=clamp((g('r')-90)/80)*25;
+  const expo=clamp(g('s')/8)*15;
+  const need=g('s')*0.5;
+  const dehyd=clamp((need-g('w'))/3)*15;
+  return Math.round(env+work+expo+dehyd);
+}
+const STATES={
+  ok:{w:'Fine',m:'Heat strain is low. Keep your water close.',c:'var(--ok)'},
+  slow:{w:'Slow down',m:'Heat strain is rising. Drink water and ease your pace.',c:'var(--warn)'},
+  stop:{w:'Stop now',m:'Heat strain is high. Drink water and rest in shade for 10 minutes.',c:'var(--stop)'}
+};
+function update(){
+  ids.forEach(k=>$(V[k]).textContent=$(k).value);
+  const sc=score();
+  const st=sc>=60?'stop':sc>=35?'slow':'ok';
+  const S=STATES[st];
+  $('sig').dataset.s=st;
+  $('word').textContent=S.w;$('msg').textContent=S.m;
+  $('score').textContent=sc;
+  $('fill').style.width=sc+'%';
+  $('barwrap').style.color=S.c;
+  $('shade').hidden=st!=='stop';
+  if(st==='stop'&&last!=='stop') alertStop();
+  last=st;
+}
+function alertStop(){
+  try{navigator.vibrate&&navigator.vibrate([400,150,400,150,400])}catch(e){}
+  try{
+    if('speechSynthesis' in window){
+      speechSynthesis.cancel();
+      speechSynthesis.speak(new SpeechSynthesisUtterance('Stop now. Heat strain is high. Drink water and rest in shade.'));
+    }
+  }catch(e){}
+  addDot();
+}
+const dots=[[60,40],[90,95],[150,60],[200,110],[230,45],[120,120]];
+function drawMap(){
+  let s='<g stroke="var(--line)" stroke-width="1">';
+  for(let x=0;x<=300;x+=50)s+=`<line x1="${x}" y1="0" x2="${x}" y2="150"/>`;
+  for(let y=0;y<=150;y+=50)s+=`<line x1="0" y1="${y}" x2="300" y2="${y}"/>`;
+  s+='</g>';
+  dots.forEach(d=>s+=`<circle cx="${d[0]}" cy="${d[1]}" r="12" fill="var(--stop)" opacity=".45"/>`);
+  $('map').innerHTML=s;
+}
+function addDot(){
+  dots.push([20+Math.random()*260,15+Math.random()*120]);
+  if(dots.length>40)dots.shift();
+  drawMap();
+}
+function toast(t){$('toast').textContent=t;setTimeout(()=>{if($('toast').textContent===t)$('toast').textContent=''},5000)}
+
+$('sos').onclick=()=>{
+  try{navigator.vibrate&&navigator.vibrate(800)}catch(e){}
+  toast('SOS sent to your emergency contact (demo, nothing was actually sent).');
+};
+$('sim').onclick=()=>{
+  if(simTimer){clearInterval(simTimer);simTimer=null;$('sim').textContent='Run a shift demo';return}
+  $('t').value=37;$('h').value=60;$('r').value=95;$('s').value=0;$('w').value=0.4;last='ok';update();
+  $('sim').textContent='Stop demo';
+  simTimer=setInterval(()=>{
+    $('s').value=Math.min(10,+$('s').value+0.1);
+    $('r').value=Math.min(180,+$('r').value+1.2);
+    update();
+    if(+$('s').value>=10){clearInterval(simTimer);simTimer=null;$('sim').textContent='Run a shift demo'}
+  },350);
+};
+ids.forEach(k=>$(k).addEventListener('input',update));
+drawMap();update();
+</script>
+</body>
+</html>

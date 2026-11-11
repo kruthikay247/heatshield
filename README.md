@@ -4,7 +4,7 @@
 Made for people who work outside.
 
 **Live demo:** <https://kruthikay247.github.io/heatshield/>
-**Demo video:** <PASTE YOUR VIDEO LINK HERE>
+**Demo video:** <https://drive.google.com/file/d/1tUC7On1qlV5gb5BJ6c7FMf_ZmdgYDPVp/view?usp=sharing>
 **Team:** <KRUTHIKA Y>
 
 ## The problem

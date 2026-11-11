@@ -3,7 +3,7 @@
 **A heat warning that is about you, not your city.**
 Made for people who work outside.
 
-**Live demo:** < https://kruthikay247.github.io/heatshield/>
+**Live demo:** <https://kruthikay247.github.io/heatshield/>
 **Demo video:** <PASTE YOUR VIDEO LINK HERE>
 **Team:** <KRUTHIKA Y>
 

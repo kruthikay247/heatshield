@@ -3,9 +3,10 @@
 **A heat warning that is about you, not your city.**
 Made for people who work outside.
 
-**Live demo:** <https://kruthikay247.github.io/heatshield/>
-**Demo video:** <https://drive.google.com/file/d/1tUC7On1qlV5gb5BJ6c7FMf_ZmdgYDPVp/view?usp=sharing>
-**Team:** <KRUTHIKA Y>
+- **Live demo:** <>
+- **Demo video:** <>
+- **Technical documentation:** [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md)
+- **Team:** <kruthikay.24cse>
 
 ## The problem
 
@@ -13,81 +14,85 @@ Delivery riders and other outdoor workers can spend hours in the sun with little
 
 ## The solution
 
-HeatShield keeps an eye on the heat around you and how hard you are working, then boils it down to one simple signal: **Fine**, **Slow down**, or **Stop now**.
+HeatShield combines the heat around you with how hard you are working and boils it down to one signal: **Fine**, **Slow down**, or **Stop now**.
 
-On **Stop now** the phone vibrates, speaks a warning, and points to the closest shade and water.
+On **Stop now** the phone vibrates, speaks a warning, and starts a rest timer.
 
 What makes it different:
-- It is personal: strain is scored per worker, not per city.
-- It runs on an ordinary phone, with no smartwatch needed.
-- The worker owns it. No employer is required.
-- Scoring is designed to run on the device, so it works without signal and personal data stays on the phone.
+- Personal: strain is scored per worker, not per city.
+- Runs on an ordinary phone. No smartwatch or employer needed.
+- Scoring happens on the device, so personal data stays on the phone.
 
-## What this MVP does
+## Features
 
-| Feature | Status in this MVP |
+| Feature | Status |
 |---|---|
-| Heat strain score (0-100) from five readings | Working |
-| Fine / Slow down / Stop now signal | Working |
+| Heat strain score (0-100) and Fine / Slow down / Stop now signal | Working |
+| Explanation of the three biggest drivers of the score | Working |
+| Live weather from Open-Meteo (temperature and humidity) | Working on the hosted link, needs location permission |
+| Bluetooth heart-rate sensor support (standard BLE service) | Built, not yet tested with a real device |
+| Personal profile: helmet, new to heat, age 45+ (saved on the phone only) | Working |
+| Water log (+250 ml) and automatic time-in-sun counter | Working |
 | Vibration and spoken alert on Stop now | Working (vibration needs a phone) |
-| Nearest-shade prompt | Simulated (fixed "200 m" text) |
+| 10-minute rest timer | Working |
+| Strain history graph with threshold lines | Working |
+| Shift demo (plays a hot shift in about 35 seconds) | Working |
+| Anonymous hotspot map | Simulated (dots live in the browser only) |
 | SOS button | Stub (shows a message, sends nothing) |
-| Anonymous hotspot map | Simulated (dots added in the browser only) |
-| "Run a shift demo" button | Working, plays a hot shift in about 35 seconds |
 
-### How the score works
+## How the score works
 
-The score adds four parts, capped at 100:
+Score = environment (0-45) + effort (0-25) + exposure (0-15) + hydration (0-15) + profile modifiers, capped at 100.
 
-1. **Environment (up to 45):** heat index from temperature and humidity (Rothfusz formula).
-2. **Effort (up to 25):** heart rate above 90 bpm.
-3. **Exposure (up to 15):** hours in the sun, up to 8.
-4. **Hydration (up to 15):** water drunk compared with about 0.5 L per hour in the sun.
+Below 35 is **Fine**, 35 to 59 is **Slow down**, and 60 or more is **Stop now**. Full details are in [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md).
 
-Below 35 is **Fine**, 35 to 59 is **Slow down**, and 60 or more is **Stop now**.
+These thresholds are a first version for demonstration. They are not medical advice and have not been clinically validated.
 
-These thresholds are a first guess for demonstration. They are not medical advice and have not been clinically validated.
+## Architecture
 
-## Honest scope: what is not built yet
+Inputs (Open-Meteo weather, Bluetooth heart rate, manual sliders, worker profile) feed an on-device scoring engine. The engine drives the signal, the explanation and the alerts. A diagram, the full tech stack and the APIs are in [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md).
 
-- **Sensors:** the ESP32 clip (BME280 + MAX30102) is planned. In this MVP the readings are set with sliders.
-- **Model:** the planned TensorFlow Lite model is not trained yet. This MVP uses the rule-based formula above as a placeholder.
-- **Live weather:** the Open-Meteo API is planned but not connected in this hosted demo.
-- **Shade and water finder:** planned, not connected.
-- **Backend and dashboard:** Supabase and a React + Leaflet hotspot dashboard are planned. Hotspot dots here live in the browser only.
+## What is not built yet
 
-## Run it locally
+- ESP32 sensor clip (BME280 and MAX30102). Heart rate currently comes from sliders or a Bluetooth heart-rate device.
+- Trained TensorFlow Lite model. The prototype uses a rule-based formula.
+- Backend (Supabase) and React + Leaflet dashboard. Hotspot dots are local.
+- Shade and water finder, and real SOS messages.
+- Flutter app for Android and iOS.
+
+## Run it
 
 No install or build step.
 
 1. Download or clone this repo.
-2. Open `index.html` in any modern browser.
+2. Open `index.html` in a browser, or run `python3 -m http.server 8000` and open http://localhost:8000.
 
-Or serve it: `python3 -m http.server 8000` and open http://localhost:8000.
-
-Best viewed at phone width (in Chrome press F12, then Ctrl+Shift+M).
+Live weather and Bluetooth need HTTPS, which the hosted link provides. Best viewed at phone width (Chrome: F12, then Ctrl+Shift+M).
 
 ## Tech stack
 
-- **MVP:** plain HTML, CSS and JavaScript in one file (`index.html`), using the browser's Vibration and Speech Synthesis APIs.
-- **Planned:** Flutter, ESP32 with BME280 and MAX30102, Python + TensorFlow Lite, Open-Meteo, Supabase, React + Leaflet.
+- **Prototype:** HTML, CSS and JavaScript in one file (`index.html`), Open-Meteo API, Geolocation, Web Bluetooth, Vibration and Speech Synthesis APIs, localStorage, GitHub Pages.
+- **Planned:** Flutter, ESP32 with BME280 and MAX30102, Python and TensorFlow Lite, Supabase, React and Leaflet.
 
 ## Credits and originality
 
 All code in `index.html` was written for this project. Third-party items used:
 
+- Open-Meteo for weather data.
 - Fonts: Fraunces, Inter and Caveat via Google Fonts (SIL Open Font License).
 - Heat index: the public Rothfusz regression used by the US National Weather Service.
-- Built with AI assistance from Claude (Anthropic) for the MVP code and documentation.
+- Built with AI assistance from Claude (Anthropic) for the prototype code and documentation.
 
 No other third-party code is included.
 
 ## Roadmap
 
-- Weeks 1-2: talk to riders and site workers, read heat-stress guidelines, decide alert rules.
-- Weeks 3-5: build the sensor clip, train and test the strain model on open data.
-- Weeks 6-8: build the Flutter app with live score, alerts, SOS and hotspot map.
-- Weeks 9-10: pilot with volunteers and fix what breaks.
+1. Train a model on open heat-stress data and compare it with the rule-based baseline.
+2. Build and calibrate the ESP32 sensor clip.
+3. Build the Flutter app with background monitoring and offline mode.
+4. Connect Supabase and a Leaflet hotspot dashboard.
+5. Add nearby shade and water points.
+6. Pilot with delivery riders and tune thresholds from their feedback.
 
 ## Safety notice
 

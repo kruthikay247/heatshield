@@ -4,7 +4,7 @@
 Made for people who work outside.
 
 - **Live demo:** <https://kruthikay247.github.io/heatshield/>
-- **Demo video:** <>
+- **Demo video:** <https://drive.google.com/file/d/1JX6_mq7N8hWXZYNFRR7uXaqW0tp-Z_Zi/view?usp=sharing>
 - **Technical documentation:** [TECHNICAL_DOCS.md](TECHNICAL_DOCS.md)
 - **Team:** <kruthikay.24cse>
 
